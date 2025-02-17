@@ -1,0 +1,19 @@
+package com.project.lms.repo;
+
+import com.project.lms.entity.Subject;
+import com.project.lms.entity.Teacher;
+import com.project.lms.entity.Year;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+
+
+@Repository
+public interface SubjectRepository extends JpaRepository<Subject, Integer> {
+    // Add custom methods as needed
+    List<Subject> findByYear(Year year);
+
+    List<Subject> findAllByTeachersContainingAndYear(Teacher teacher, Year year);
+}
+
