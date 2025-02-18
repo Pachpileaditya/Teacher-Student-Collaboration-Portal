@@ -4,6 +4,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.project.lms.DTO.ContentDTO;
+import com.project.lms.DTO.ContentSubjectDTO;
 import com.project.lms.DTO.SubjectNamesDTO;
 import com.project.lms.DTO.TeacherContentDTO;
 import com.project.lms.DTO.UnitDTO;
@@ -17,8 +18,7 @@ import com.project.lms.service.SubjectService;
 import com.project.lms.service.TeacherService;
 import com.project.lms.service.UnitService;
 
-import java.util.ArrayList;
-import java.util.List;
+
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,37 +48,26 @@ public class ContentController {
         this.unitService = unitService;
     }
 
-    // teacher add content
-    @PostMapping("/add")
-    public ResponseEntity<ContentDTO> addContent(@RequestBody Map<String, Object> requestBody) {
-        int teacherId = (Integer) requestBody.get("teacherId");
-        int subjectId = (Integer) requestBody.get("subjectId");
-        int unitId = (Integer) requestBody.get("unit");
+   
 
-        Teacher teacher = teacherService.findTeacherById(teacherId);
-        Subject subject = subjectService.getSubjectById(subjectId);
-        Unit unit = unitService.getUnit(unitId);
 
-        if (teacher == null || subject == null || unit == null) {
-            return ResponseEntity.badRequest().build();
-        }
+    // convert content to contentSubjectDTO
+    private ContentSubjectDTO convertToContentSubjectDTO(Content content)
+    {
 
-        String contentTitle = (String) requestBody.get("contentTitle");
-        String contentDesc = (String) requestBody.get("contentDesc");
-        String fileURL = (String) requestBody.get("fileURL");
+        // get unitDTO
+        Unit unit = content.getUnit();
+        UnitDTO unitDTO = new UnitDTO(unit.getUnitNo());
 
-        Content content = new Content();
-        content.setTitle(contentTitle);
-        content.setDescription(contentDesc);
-        content.setFileUrl(fileURL);
-        content.setTeacher(teacher);
-        content.setSubject(subject);
-        content.setUnit(unit);
+        // create contentSubjectDTO
+        ContentSubjectDTO contentSubjectDTO = new ContentSubjectDTO();
+        contentSubjectDTO.setUnitNo(unitDTO);
+        contentSubjectDTO.setTitle(content.getTitle());
+        contentSubjectDTO.setDescription(content.getDescription());
+        contentSubjectDTO.setFileURL(content.getFileUrl());
 
-        Content savedContent = contentService.addContent(content);
+        return contentSubjectDTO;
 
-        ContentDTO contentDTO = convertToContentDTO(savedContent);
-        return ResponseEntity.ok(contentDTO);
     }
 
     private ContentDTO convertToContentDTO(Content content) {
@@ -109,68 +98,18 @@ public class ContentController {
 
     // teacher and student can read content
     @GetMapping("/{teacherId}/{subjectId}/{unitId}")
-    public ResponseEntity<List<ContentDTO>> getContentBySubjectAndTeacher(@PathVariable int teacherId,
+    public ResponseEntity<ContentSubjectDTO> getContentBySubjectAndTeacher(@PathVariable int teacherId,
                                                                 @PathVariable int subjectId, @PathVariable int unitId) {
         Teacher teacher = teacherService.findTeacherById(teacherId);
         Subject subject = subjectService.getSubjectById(subjectId);
         Unit unit = unitService.getUnit(unitId);
         Content contents = contentService.getContentByTeacherSubjectAndUnit(teacher, subject, unit);
-        List<ContentDTO> theContentDTOs = new ArrayList<>();
-        
+        ContentSubjectDTO contentSubjectDTO = convertToContentSubjectDTO(contents);
 
-        return ResponseEntity.ok(theContentDTOs);
-
-    }
-
-    // teacher update content
-    @PutMapping("/update/{contentId}")
-    public ResponseEntity<ContentDTO> updateContent(@PathVariable int contentId,
-            @RequestBody Map<String, Object> requestBody) {
-
-        Content c = contentService.getContentById(contentId);
-        Subject subject = c.getSubject();
-        User user = c.getTeacher().getUser();
-        String contentTitle = (String) requestBody.get("contentTitle");
-        String contentDesc = (String) requestBody.get("contentDesc");
-        String fileURL = (String) requestBody.get("fileURL");
-
-        c.setTitle(contentTitle);
-        c.setDescription(contentDesc);
-        c.setFileUrl(fileURL);
-
-        contentService.addContent(c);
-
-        ContentDTO contentDTO = new ContentDTO();
-        contentDTO.setId(c.getId());
-        contentDTO.setTitle(c.getTitle());
-        contentDTO.setDescription(c.getDescription());
-        contentDTO.setFileURL(c.getFileUrl());
-        SubjectNamesDTO subjectNamesDTO = new SubjectNamesDTO();
-        subjectNamesDTO.setId(subject.getId());
-        subjectNamesDTO.setName(subject.getName());
-        contentDTO.setSubject(subjectNamesDTO);
-        TeacherContentDTO teacherContentDTO = new TeacherContentDTO();
-        teacherContentDTO.setName(user.getName());
-        teacherContentDTO.setEmail(user.getEmail());
-        contentDTO.setSubject(subjectNamesDTO);
-        contentDTO.setTeacher(teacherContentDTO);
-
-        return ResponseEntity.ok(contentDTO);
+        return ResponseEntity.ok(contentSubjectDTO);
 
     }
 
-    // teacher delete content
-    @DeleteMapping("/{contentId}")
-    public String deleteContent(@PathVariable int contentId)
-    {
-        if(!contentService.contentExits(contentId))
-        {
-            return "Content does not exits with id = " + contentId;
-        }
-        Content content = contentService.getContentById(contentId);
-        contentService.deleteContent(content);
-
-        return "content deleted successfully.";
-    }
+    
 
 }

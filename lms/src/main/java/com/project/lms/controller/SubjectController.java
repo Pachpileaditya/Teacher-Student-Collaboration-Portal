@@ -42,60 +42,46 @@ public class SubjectController
         this.teacherService = teacherService;
     }
 
-    // get subjects by year
-    @GetMapping("/names/{yearId}")    
-    public ResponseEntity<?> getSubjectsByYear(@PathVariable int yearId) {
-        if(!yearService.yearExits(yearId))
-        {
-            return ResponseEntity.badRequest().body("Year does not exits with yearId = " + yearId);
-        }
-        Year theYear = yearService.findYearById(yearId);
-        List<Subject> theSubjects = subjectService.getAllSubjectsByYear(theYear);
-
-        List<SubjectNamesDTO> subjectNames = toSubjectNamesDTOList(theSubjects);
-
-        return ResponseEntity.ok(subjectNames);
-    }
-
-    public static List<SubjectNamesDTO> toSubjectNamesDTOList(List<Subject> subjects) {
-        return subjects.stream()
-            .map(subject -> new SubjectNamesDTO(subject.getId(), subject.getName()))
-            .collect(Collectors.toList());
-    }
-
-    @GetMapping("/{teacherId}/{yearId}")
-    public ResponseEntity<?> getSubjectsByTeachersAndYears(@PathVariable int teacherId, @PathVariable int yearId) {
-        
-        Teacher teacher = teacherService.findTeacherById(teacherId);
+    // get subject by year
+    @GetMapping("/{yearId}")
+    public ResponseEntity<List<SubjectNamesDTO>> getSubjectByYear(@PathVariable int yearId) {
         Year year = yearService.findYearById(yearId);
-        if(teacher == null || year == null)
-        {
-            return ResponseEntity.badRequest().body("Either teacher or Year does not match");
+
+        if (year == null) {
+            return ResponseEntity.notFound().build();
         }
 
-        List<Subject> subjects = subjectService.getAllSubjectsByTeacherAndYear(teacher, year);
+        List<Subject> subjects = subjectService.getAllSubjectsByYear(year);
 
-        List<SubjectNamesDTO> subjectNamesDTOs = toSubjectNamesDTOList(subjects);
+        // Convert Subject entities to SubjectNamesDTO
+        List<SubjectNamesDTO> subjectDTOs = subjects.stream()
+                .map(subject -> new SubjectNamesDTO(subject.getId(), subject.getName()))
+                .collect(Collectors.toList());
 
-        return ResponseEntity.ok(subjectNamesDTOs);
+        return ResponseEntity.ok(subjectDTOs);
     }
 
-    // delete subject for teacher
-    @DeleteMapping("/teachers/{teacherId}")
-    public ResponseEntity<?> deleteSubjectByTeacher(@PathVariable int teacherId, @RequestBody List<SubjectNamesDTO> subjectNamesDTO)
-    {
-        Teacher teacher = teacherService.findTeacherById(teacherId);
-        Set<Subject> subjects = teacher.getSubjects();
-        for(SubjectNamesDTO sn : subjectNamesDTO)
-        {
-            int subjectId = sn.getId();
-            Subject theSubject = subjectService.getSubjectById(subjectId);
-            subjects.remove(theSubject);
-        }
-        teacher.setSubjects(subjects);
-        teacherService.saveTeacher(teacher);
-        return ResponseEntity.ok("Subjects deleted successfully");
-    }
+    // // get subjects by year
+    // @GetMapping("/names/{yearId}")    
+    // public ResponseEntity<?> getSubjectsByYear(@PathVariable int yearId) {
+    //     if(!yearService.yearExits(yearId))
+    //     {
+    //         return ResponseEntity.badRequest().body("Year does not exits with yearId = " + yearId);
+    //     }
+    //     Year theYear = yearService.findYearById(yearId);
+    //     List<Subject> theSubjects = subjectService.getAllSubjectsByYear(theYear);
+
+    //     List<SubjectNamesDTO> subjectNames = toSubjectNamesDTOList(theSubjects);
+
+    //     return ResponseEntity.ok(subjectNames);
+    // }
+
+    
+    
+
+    
+
+    
     
     
     

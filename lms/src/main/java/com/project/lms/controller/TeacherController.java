@@ -3,15 +3,21 @@ package com.project.lms.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.project.lms.DTO.ContentSubjectDTO;
 import com.project.lms.DTO.SubjectNamesDTO;
 import com.project.lms.DTO.TeacherDTO;
+import com.project.lms.DTO.UnitDTO;
 import com.project.lms.DTO.UserDTO;
+import com.project.lms.entity.Content;
 import com.project.lms.entity.Subject;
 import com.project.lms.entity.Teacher;
+import com.project.lms.entity.Unit;
 import com.project.lms.entity.User;
 import com.project.lms.entity.Year;
+import com.project.lms.service.ContentService;
 import com.project.lms.service.SubjectService;
 import com.project.lms.service.TeacherService;
+import com.project.lms.service.UnitService;
 import com.project.lms.service.UserService;
 import com.project.lms.service.YearService;
 
@@ -43,16 +49,22 @@ public class TeacherController
     private TeacherService teacherService;
     private UserService userService;
     private SubjectService subjectService;
+    private UnitService unitService;
+    private ContentService contentService;
 
     @Autowired
     public TeacherController(YearService yearService,
                             TeacherService teacherService,
                             UserService userService,
-                            SubjectService subjectService) {
+                            SubjectService subjectService,
+                            UnitService unitService,
+                            ContentService contentService) {
         this.yearService = yearService;
         this.teacherService = teacherService;
         this.userService = userService;
         this.subjectService = subjectService;
+        this.unitService = unitService;
+        this.contentService = contentService;
     }
 
 
@@ -64,11 +76,11 @@ public class TeacherController
 
 
     // CRUD operation on teacher
-    // get all teacher
-    @GetMapping("/")
-    public ResponseEntity<List<Teacher>> getAllTeachers() {
-        return ResponseEntity.ok(teacherService.getAllTeachers());
-    }
+    // // get all teacher
+    // @GetMapping("/")
+    // public ResponseEntity<List<Teacher>> getAllTeachers() {
+    //     return ResponseEntity.ok(teacherService.getAllTeachers());
+    // }
     
     
     // get teacher by id
@@ -93,7 +105,7 @@ public class TeacherController
         return new TeacherDTO(teacher.getId(), teacher.getExpertise(), teacher.getTotalPoints(), userDTO, yearIds);
     }
 
-    // update teacher
+    // update teacher profile
 
     @PutMapping("/{id}")
     public ResponseEntity<TeacherDTO> updateTeacher(@PathVariable Integer id, 
@@ -144,7 +156,7 @@ public class TeacherController
         return ResponseEntity.ok(responseDTO);
     }
 
-    // delete teacher
+    // delete teacher account
     @DeleteMapping("/{teacherId}")
     public ResponseEntity<?> deleteTeacher(@PathVariable int teacherId)
     {
@@ -161,17 +173,18 @@ public class TeacherController
 
     // teacher and year CRUD
 
-    // get all years
-    @GetMapping("/years")
-    public ResponseEntity<List<Year>> getAllYears() 
+    // get all years teacher added
+    @GetMapping("/years/{teacherId}")
+    public ResponseEntity<List<Year>> getAllYears(@PathVariable int teacherId) 
     {
-        System.out.println(yearService);
+        Teacher teacher = teacherService.findTeacherById(teacherId);
+        // create yearDTO
         List<Year> theYears = yearService.getAllYears();
         return ResponseEntity.ok(theYears);
     }
     
 
-    // add years
+    // add years 
     @PostMapping("/years/{teacherId}")
     public ResponseEntity<String> addYears(@PathVariable int teacherId, @RequestBody List<Year> years) {
         //TODO: process POST request
@@ -231,6 +244,31 @@ public class TeacherController
         return ResponseEntity.ok("Year/years deleted successfully.");
     }
 
+
+    // get subject for teacher yearwise
+    @GetMapping("/{teacherId}/{yearId}")
+    public ResponseEntity<?> getSubjectsByTeachersAndYears(@PathVariable int teacherId, @PathVariable int yearId) {
+        
+        Teacher teacher = teacherService.findTeacherById(teacherId);
+        Year year = yearService.findYearById(yearId);
+        if(teacher == null || year == null)
+        {
+            return ResponseEntity.badRequest().body("Either teacher or Year does not match");
+        }
+
+        List<Subject> subjects = subjectService.getAllSubjectsByTeacherAndYear(teacher, year);
+
+        List<SubjectNamesDTO> subjectNamesDTOs = toSubjectNamesDTOList(subjects);
+
+        return ResponseEntity.ok(subjectNamesDTOs);
+    }
+
+    public static List<SubjectNamesDTO> toSubjectNamesDTOList(List<Subject> subjects) {
+        return subjects.stream()
+            .map(subject -> new SubjectNamesDTO(subject.getId(), subject.getName()))
+            .collect(Collectors.toList());
+    }
+
     // add subjects
     @PostMapping("/add-subjects/{teacherId}")
     public ResponseEntity<?> addSubjects(@PathVariable int teacherId, @RequestBody List<SubjectNamesDTO> subjectNamesDTOs) 
@@ -254,11 +292,171 @@ public class TeacherController
         return ResponseEntity.ok("Subjects added Successfully");
     }
 
+    // delete subject
+    @DeleteMapping("/delete/{teacherId}")
+    public String deleteSubjects(@PathVariable int teacherId, @RequestBody List<SubjectNamesDTO> subjectNamesDTO)
+    {
+        Teacher teacher = teacherService.findTeacherById(teacherId);
+        Set<Subject> subjects = teacher.getSubjects();
+        Set<Subject> removeSubjects = new HashSet();
+
+        for(SubjectNamesDTO snd : subjectNamesDTO)
+        {
+            int id = snd.getId();
+            Subject subject = subjectService.getSubjectById(id);
+            removeSubjects.add(subject);
+        }
+
+        subjects.remove(removeSubjects);
+
+        teacher.setSubjects(subjects);
+
+        teacherService.saveTeacher(teacher);
+
+        return "Subjects deleted successfully.";
+
+    }
+    
+    // get subjects for teacher yearwise - subject controller
+
     
     
 
+     // teacher add content
+    @PostMapping("/add/{teacherId}/{subjectId}/{unitId}")
+    public ResponseEntity<ContentSubjectDTO> addContent(
+                                        @PathVariable int teacherId,
+                                        @PathVariable int subjectId,
+                                        @PathVariable int unitId,
+                                        @RequestBody Map<String, Object> requestBody) {
+
+        Teacher teacher = teacherService.findTeacherById(teacherId);
+        Subject subject = subjectService.getSubjectById(subjectId);
+        Unit unit = unitService.getUnit(unitId);
+
+        if (teacher == null || subject == null || unit == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        String contentTitle = (String) requestBody.get("contentTitle");
+        String contentDesc = (String) requestBody.get("contentDesc");
+        String fileURL = (String) requestBody.get("fileURL");
+
+        Content content = new Content();
+        content.setTitle(contentTitle);
+        content.setDescription(contentDesc);
+        content.setFileUrl(fileURL);
+        content.setTeacher(teacher);
+        content.setSubject(subject);
+        content.setUnit(unit);
+
+        Content savedContent = contentService.addContent(content);
+
+        ContentSubjectDTO contentSubjectDTO = convertToContentSubjectDTO(savedContent);
+        return ResponseEntity.ok(contentSubjectDTO);
+    }
+
+    // convert content to contentSubjectDTO
+    private ContentSubjectDTO convertToContentSubjectDTO(Content content)
+    {
+
+        // get unitDTO
+        Unit unit = content.getUnit();
+        UnitDTO unitDTO = new UnitDTO(unit.getUnitNo());
+
+        // create contentSubjectDTO
+        ContentSubjectDTO contentSubjectDTO = new ContentSubjectDTO();
+        contentSubjectDTO.setUnitNo(unitDTO);
+        contentSubjectDTO.setTitle(content.getTitle());
+        contentSubjectDTO.setDescription(content.getDescription());
+        contentSubjectDTO.setFileURL(content.getFileUrl());
+
+        return contentSubjectDTO;
+
+    }
+
+    // teacher update content
+    // teacher can update its own content - teacherId
+    // to updated content need subjectId, unitId
+    @PutMapping("/update/{teacherId}/{subjectId}/{unitId}")
+    public ResponseEntity<ContentSubjectDTO> updateContent(@PathVariable int teacherId,
+                              @PathVariable int subjectId
+                            , @PathVariable int unitId,
+                              @RequestBody Map<String, Object> requestBody) 
+    {
+
+        Teacher teacher = teacherService.findTeacherById(teacherId);
+        Subject subject = subjectService.getSubjectById(subjectId);
+        Unit unit = unitService.getUnit(unitId);
+
+        Content c = contentService.getContentByTeacherSubjectAndUnit(teacher, subject, unit);
+
+        c.setTitle((String)requestBody.get("title"));
+        c.setDescription((String)requestBody.get(("description")));
+        c.setFileUrl((String)requestBody.get("fileURL"));
+
+        contentService.addContent(c);
+
+        ContentSubjectDTO contentSubjectDTO = convertToContentSubjectDTO(c);
+
+        return ResponseEntity.ok(contentSubjectDTO);
+
+        // Subject subject = c.getSubject();
+        // User user = c.getTeacher().getUser();
+        // String contentTitle = (String) requestBody.get("contentTitle");
+        // String contentDesc = (String) requestBody.get("contentDesc");
+        // String fileURL = (String) requestBody.get("fileURL");
+
+        // c.setTitle(contentTitle);
+        // c.setDescription(contentDesc);
+        // c.setFileUrl(fileURL);
+
+        // contentService.addContent(c);
+
+        // ContentDTO contentDTO = new ContentDTO();
+        // contentDTO.setId(c.getId());
+        // contentDTO.setTitle(c.getTitle());
+        // contentDTO.setDescription(c.getDescription());
+        // contentDTO.setFileURL(c.getFileUrl());
+        // SubjectNamesDTO subjectNamesDTO = new SubjectNamesDTO();
+        // subjectNamesDTO.setId(subject.getId());
+        // subjectNamesDTO.setName(subject.getName());
+        // contentDTO.setSubject(subjectNamesDTO);
+        // TeacherContentDTO teacherContentDTO = new TeacherContentDTO();
+        // teacherContentDTO.setName(user.getName());
+        // teacherContentDTO.setEmail(user.getEmail());
+        // contentDTO.setSubject(subjectNamesDTO);
+        // contentDTO.setTeacher(teacherContentDTO);
+
+        // return ResponseEntity.ok(contentDTO);
+
+    }
+
+    // teacher delete content
+    @DeleteMapping("/delete/{teacherId}/{subjectId}/{unitId}")
+    public String deleteContent(@PathVariable int teacherId,
+                                @PathVariable int subjectId,
+                                @PathVariable int unitId)
+    {
+
+        Teacher teacher = teacherService.findTeacherById(teacherId);
+        Subject subject = subjectService.getSubjectById(subjectId);
+        Unit unit = unitService.getUnit(unitId);
+
+        Content content = contentService.getContentByTeacherSubjectAndUnit(teacher, subject, unit);
+
+        contentService.deleteContent(content);
 
 
+        // if(!contentService.contentExits(contentId))
+        // {
+        //     return "Content does not exits with id = " + contentId;
+        // }
+        // Content content = contentService.getContentById(contentId);
+        // contentService.deleteContent(content);
+
+        return "content deleted successfully.";
+    }
     
 
     
