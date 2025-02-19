@@ -107,7 +107,6 @@ public class ContentController {
         ContentSubjectDTO contentSubjectDTO = convertToContentSubjectDTO(contents);
 
         return ResponseEntity.ok(contentSubjectDTO);
-
     }
 
     

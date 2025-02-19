@@ -1,6 +1,5 @@
 package com.project.lms.entity;
 
-
 // import javax.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
@@ -32,31 +31,21 @@ public class Teacher {
 
     private String expertise;
 
-    @Column(name = "total_points")
-    private Integer totalPoints;
+    @Column(name = "total_points", columnDefinition = "INTEGER DEFAULT 0")
+    private Integer totalPoints = 0;
 
-    @ManyToMany(cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
-    @JoinTable(
-        name = "teacher_years",
-        joinColumns = @JoinColumn(name = "teacher_id"),
-        inverseJoinColumns = @JoinColumn(name = "year_id")
-    )
+    @ManyToMany(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
+    @JoinTable(name = "teacher_years", joinColumns = @JoinColumn(name = "teacher_id"), inverseJoinColumns = @JoinColumn(name = "year_id"))
     private Set<Year> years = new HashSet<>();
 
-    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @JoinTable(
-        name = "teacher_subjects",
-        joinColumns = @JoinColumn(name = "teacher_id"),
-        inverseJoinColumns = @JoinColumn(name = "subject_id")
-    )
+    @ManyToMany(cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+    @JoinTable(name = "teacher_subjects", joinColumns = @JoinColumn(name = "teacher_id"), inverseJoinColumns = @JoinColumn(name = "subject_id"))
     private Set<Subject> subjects = new HashSet<>();
 
-    @OneToMany(mappedBy = "teacher",
-                cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "teacher", cascade = CascadeType.ALL)
     private Set<Content> contents = new HashSet<>();
 
-    @OneToMany(mappedBy = "teacher",
-                cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "teacher", cascade = CascadeType.ALL)
     private Set<Answer> answers = new HashSet<>();
 
     // Constructors, Getters, and Setters
@@ -130,8 +119,6 @@ public class Teacher {
         this.answers = answers;
     }
 
-
-
     // Helper method to add a year
     public void addYear(Year year) {
         years.add(year);
@@ -151,7 +138,4 @@ public class Teacher {
                 + "]";
     }
 
-    
-
 }
-

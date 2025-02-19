@@ -3,6 +3,7 @@ package com.project.lms.entity;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -38,7 +39,7 @@ public class Answer {
 
     private Integer points;
 
-    @OneToOne(mappedBy = "answer")
+    @OneToOne(mappedBy = "answer", cascade = CascadeType.ALL)
     private AnswerTracking tracking;
 
     @PrePersist
