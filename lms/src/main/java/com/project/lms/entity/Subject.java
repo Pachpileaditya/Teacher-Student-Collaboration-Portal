@@ -1,21 +1,11 @@
 package com.project.lms.entity;
 
-
-// import javax.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "subjects")
@@ -30,27 +20,30 @@ public class Subject {
 
     @ManyToOne
     @JoinColumn(name = "year_id")
+    @JsonIgnore
     private Year year;
 
     @ManyToMany(mappedBy = "subjects")
+    @JsonIgnore
     private Set<Teacher> teachers = new HashSet<>();
 
     @ManyToMany(mappedBy = "subjects")
+    @JsonIgnore
     private Set<Student> students = new HashSet<>();
 
     @OneToMany(mappedBy = "subject")
+    @JsonIgnore
     private Set<Content> contents = new HashSet<>();
 
     @OneToMany(mappedBy = "subject")
+    @JsonIgnore
     private Set<Question> questions = new HashSet<>();
 
-    // Constructors, Getters, and Setters
-
+    // Constructors
     public Subject() {
     }
 
     // Getters and Setters
-
     public Integer getId() {
         return id;
     }
@@ -109,10 +102,6 @@ public class Subject {
 
     @Override
     public String toString() {
-        return "Subject [id=" + id + ", name=" + name + ", year=" + year + ", teachers=" + teachers + ", students="
-                + students + ", contents=" + contents + ", questions=" + questions + "]";
+        return "Subject [id=" + id + ", name=" + name + ", year=" + (year != null ? year.getId() : "null") + "]";
     }
-
-    
 }
-

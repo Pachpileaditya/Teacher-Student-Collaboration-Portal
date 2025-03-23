@@ -10,6 +10,7 @@ import com.project.lms.entity.Content;
 import com.project.lms.entity.Subject;
 import com.project.lms.entity.Teacher;
 import com.project.lms.entity.Unit;
+import com.project.lms.exception.ResourceNotFoundException;
 import com.project.lms.repo.ContentRepository;
 
 import jakarta.transaction.Transactional;
@@ -57,5 +58,16 @@ public class ContentService
     public void deleteContent(Content content) {
         contentRepository.delete(content);
     }
+
+    public List<Content> getContentsByTeacherAndSubject(Teacher teacher, Subject subject) {
+        List<Content> contents = contentRepository.findAllByTeacherAndSubject(teacher, subject);
+        
+        if (contents.isEmpty()) {
+            throw new ResourceNotFoundException("No content found for subject id = " + subject.getId());
+        }
+        
+        return contents;
+    }
+    
     
 }

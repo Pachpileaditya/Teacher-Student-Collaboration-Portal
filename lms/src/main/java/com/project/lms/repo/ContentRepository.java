@@ -7,6 +7,7 @@ import com.project.lms.entity.Teacher;
 import com.project.lms.entity.Unit;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -15,5 +16,7 @@ import org.springframework.stereotype.Repository;
 public interface ContentRepository extends JpaRepository<Content, Integer> {
     // Add custom methods as needed
     Content findByTeacherAndSubjectAndUnit(Teacher teacher, Subject subject, Unit unit);
+
+    List<Content> findAllByTeacherAndSubject(Teacher teacher, Subject subject);
 }
 

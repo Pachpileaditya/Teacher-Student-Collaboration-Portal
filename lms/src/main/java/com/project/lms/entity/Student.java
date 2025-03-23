@@ -69,13 +69,7 @@ public class Student {
         this.user = user;
     }
 
-    public Integer getYear() {
-        return year;
-    }
-
-    public void setYear(Integer year) {
-        this.year = year;
-    }
+    
 
     public Boolean getIsPassout() {
         return isPassout;
@@ -106,6 +100,16 @@ public class Student {
         return "Student [id=" + id + ", user=" + user + ", year=" + year + ", isPassout=" + isPassout + ", subjects="
                 + subjects + ", questions=" + questions + "]";
     }
+
+    public Integer getYear() {
+        return year;
+    }
+
+    public void setYear(Integer year) {
+        this.year = year;
+    }
+
+    
 
     
 }

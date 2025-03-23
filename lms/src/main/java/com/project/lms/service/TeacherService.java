@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.project.lms.entity.Teacher;
+import com.project.lms.entity.User;
+import com.project.lms.entity.Year;
 import com.project.lms.repo.TeacherRepository;
 
 import jakarta.transaction.Transactional;
@@ -53,6 +55,11 @@ public class TeacherService
 
     public void deleteTeacherById(int teacherId) {
         teacherRepository.deleteById(teacherId);
+    }
+
+    public Teacher getTeacherByUser(User user)
+    {
+        return teacherRepository.findByUser(user);
     }
 
     

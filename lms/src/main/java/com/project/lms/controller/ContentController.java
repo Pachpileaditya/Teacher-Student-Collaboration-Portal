@@ -7,6 +7,7 @@ import com.project.lms.DTO.ContentDTO;
 import com.project.lms.DTO.ContentSubjectDTO;
 import com.project.lms.DTO.SubjectNamesDTO;
 import com.project.lms.DTO.TeacherContentDTO;
+import com.project.lms.DTO.UnitContentDTO;
 import com.project.lms.DTO.UnitDTO;
 import com.project.lms.entity.Content;
 import com.project.lms.entity.Subject;
@@ -18,19 +19,16 @@ import com.project.lms.service.SubjectService;
 import com.project.lms.service.TeacherService;
 import com.project.lms.service.UnitService;
 
+import java.util.List;
 
-import java.util.Map;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:5173")
 @RequestMapping("/api/content")
 public class ContentController {
 
@@ -39,7 +37,6 @@ public class ContentController {
     private SubjectService subjectService;
     private UnitService unitService;
 
-    @Autowired
     public ContentController(ContentService contentService, TeacherService teacherService,
             SubjectService subjectService, UnitService unitService) {
         this.contentService = contentService;
@@ -48,12 +45,8 @@ public class ContentController {
         this.unitService = unitService;
     }
 
-   
-
-
     // convert content to contentSubjectDTO
-    private ContentSubjectDTO convertToContentSubjectDTO(Content content)
-    {
+    private ContentSubjectDTO convertToContentSubjectDTO(Content content) {
 
         // get unitDTO
         Unit unit = content.getUnit();
@@ -96,19 +89,33 @@ public class ContentController {
                 unitDTO);
     }
 
-    // teacher and student can read content
-    @GetMapping("/{teacherId}/{subjectId}/{unitId}")
-    public ResponseEntity<ContentSubjectDTO> getContentBySubjectAndTeacher(@PathVariable int teacherId,
-                                                                @PathVariable int subjectId, @PathVariable int unitId) {
+    // access content for teacher
+    @GetMapping("/{teacherId}/{subjectId}")
+    public ResponseEntity<List<UnitContentDTO>> getUnits(@PathVariable int teacherId, @PathVariable int subjectId) {
         Teacher teacher = teacherService.findTeacherById(teacherId);
         Subject subject = subjectService.getSubjectById(subjectId);
-        Unit unit = unitService.getUnit(unitId);
-        Content contents = contentService.getContentByTeacherSubjectAndUnit(teacher, subject, unit);
-        ContentSubjectDTO contentSubjectDTO = convertToContentSubjectDTO(contents);
+        List<Content> contents = contentService.getContentsByTeacherAndSubject(teacher, subject);
 
-        return ResponseEntity.ok(contentSubjectDTO);
+        // Convert List<Content> to List<UnitContentDTO>
+        List<UnitContentDTO> contentDTOs = contents.stream()
+                .map(content -> new UnitContentDTO(content.getUnit().getId(), content.getTitle(), content.getFileUrl()))
+                .toList(); // If using Java 16+, otherwise use `.collect(Collectors.toList())`
+
+        return ResponseEntity.ok(contentDTOs);
     }
 
-    
+    // teacher and student can read content
+    // @GetMapping("/{teacherId}/{subjectId}/{unitId}")
+    // public ResponseEntity<ContentSubjectDTO>
+    // getContentBySubjectAndTeacher(@PathVariable int teacherId,
+    // @PathVariable int subjectId, @PathVariable int unitId) {
+    // Teacher teacher = teacherService.findTeacherById(teacherId);
+    // Subject subject = subjectService.getSubjectById(subjectId);
+    // Unit unit = unitService.getUnit(unitId);
+    // Content contents = contentService.getContentByTeacherSubjectAndUnit(teacher,
+    // subject, unit);
+    // ContentSubjectDTO contentSubjectDTO = convertToContentSubjectDTO(contents);
+    // return ResponseEntity.ok(contentSubjectDTO);
+    // }
 
 }

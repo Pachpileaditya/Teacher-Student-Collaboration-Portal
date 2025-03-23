@@ -1,0 +1,22 @@
+Institute App
+
+Teacher:
+	- choose subjects
+	- add subject content
+	- see subject content
+	- update subject content
+	- delete subject content
+	- give answers of questions
+	- see answer of question
+	- modify answer of question
+	- see points earned
+	- see the views and like to answer
+
+Student: 
+	- see subject content
+	- ask question of subject(to every teacher for subject)
+	- delete question
+	- see answer for question.
+	- see subject questions and answers given by each teacher
+	- view answer
+	- like the answer

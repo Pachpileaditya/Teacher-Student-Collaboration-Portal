@@ -1,45 +1,40 @@
 package com.project.lms.entity;
 
-
-// import javax.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "years")
-public class Year 
-{
+public class Year {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    // Although the column name is "name", it is defined as INT in your SQL.
     @Column(unique = true, nullable = false)
     private Integer name;
 
     @ManyToMany(mappedBy = "years")
+    @JsonIgnore
     private Set<Teacher> teachers = new HashSet<>();
 
     @OneToMany(mappedBy = "year")
+    @JsonIgnore
     private Set<Subject> subjects = new HashSet<>();
 
-    // Constructors, Getters, and Setters
-
+    // Constructors
     public Year() {
     }
 
-    // Getters and Setters
+    public Year(Integer year) {
+        this.name = year;
+    }
 
+    // Getters and Setters
     public Integer getId() {
         return id;
     }
@@ -74,8 +69,6 @@ public class Year
 
     @Override
     public String toString() {
-        return "Year [id=" + id + ", name=" + name + ", teachers=" + teachers + ", subjects=" + subjects + "]";
+        return "Year [id=" + id + ", name=" + name + "]";
     }
-
-    
 }

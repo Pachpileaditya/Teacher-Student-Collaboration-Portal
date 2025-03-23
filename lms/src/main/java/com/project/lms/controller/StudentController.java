@@ -2,6 +2,7 @@ package com.project.lms.controller;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 
 import com.project.lms.DTO.AnswerDTO;
 import com.project.lms.DTO.AnswerTrackingDTO;
@@ -10,12 +11,14 @@ import com.project.lms.DTO.StudentDTO;
 import com.project.lms.DTO.SubjectDTO;
 import com.project.lms.DTO.TeacherNameDTO;
 import com.project.lms.DTO.UnitDTO;
+import com.project.lms.DTO.YearDTO;
 import com.project.lms.entity.Answer;
 import com.project.lms.entity.AnswerTracking;
 import com.project.lms.entity.Question;
 import com.project.lms.entity.Student;
 import com.project.lms.entity.Subject;
 import com.project.lms.entity.Unit;
+import com.project.lms.entity.Year;
 import com.project.lms.service.AnswerService;
 import com.project.lms.service.AnswerTrackingService;
 import com.project.lms.service.QuestionService;
@@ -24,12 +27,15 @@ import com.project.lms.service.SubjectService;
 import com.project.lms.service.UnitService;
 import com.project.lms.service.YearService;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collector;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -42,8 +48,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 
 
+
 @RestController
+@CrossOrigin(origins = "http://localhost:5173")
 @RequestMapping("/api/students")
+@SecurityRequirement(name = "bearerAuth")
 public class StudentController {
 
     private SubjectService subjectService;
@@ -70,6 +79,67 @@ public class StudentController {
     public String getMethodName() {
         return new String("Hello from student controller");
     }
+
+
+    // get student year
+    @GetMapping("/year/{studentId}")
+    public ResponseEntity<?> getStudentYeaResponseEntity(@PathVariable int studentId)
+    {
+        Student std = studentService.getStudentById(studentId);
+        Year year = yearService.findYearById(std.getId());
+        YearDTO yearDTO = new YearDTO();
+
+        yearDTO.setId(year.getId());
+        yearDTO.setYear(year.getName());
+        return ResponseEntity.ok(yearDTO);
+    }
+
+    // get student subjects 
+    @GetMapping("/subjects/{studentId}")
+    public ResponseEntity<?> getStudentSubjectsEntity(@PathVariable int studentId) 
+    {
+        Student student = studentService.getStudentById(studentId);
+        Set<Subject> subjects = student.getSubjects();
+        List<SubjectDTO> subjectDTOs = convertSubjectToDTOList(subjects);
+        return ResponseEntity.ok(subjectDTOs);
+    }
+    
+    public List<SubjectDTO> convertSubjectToDTOList(Set<Subject> subjects) {
+        return subjects.stream()
+                       .map(subject -> new SubjectDTO(subject.getId(), subject.getName()))
+                       .collect(Collectors.toList());
+    }
+
+    // add student subjects
+    @PostMapping("/subjects/add/{studentId}")
+    public ResponseEntity<?> addSubject(@PathVariable int studentId, @RequestBody List<SubjectDTO> subjectDTOs) 
+    {
+        Student student = studentService.getStudentById(studentId);
+        Set<Subject> studentSubjects = student.getSubjects();
+        for(SubjectDTO s : subjectDTOs)
+        {
+            Subject subject = subjectService.getSubjectById(s.getSubjectId());
+            studentSubjects.add(subject);
+        }
+        studentService.saveStudent(student);
+
+        return ResponseEntity.ok("Subjects added successfully");
+    }
+
+    // delete subject by student
+    @DeleteMapping("/subject/{studentId}/{subjectId}")
+    public ResponseEntity<?> deleteSubject(@PathVariable int studentId, @PathVariable int subjectId)
+    {
+        Student student = studentService.getStudentById(studentId);
+        Subject subject = subjectService.getSubjectById(subjectId);
+        student.getSubjects().remove(subject);
+        return ResponseEntity.ok("Subject remove successfully -> " + subject.getName());
+    }
+
+    
+    
+    
+
 
     // read subject content from subject controller
 
